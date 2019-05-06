@@ -451,7 +451,7 @@ def main():
         Rook(BLACK), Knight(BLACK), Bishop(BLACK), Queen(BLACK),
         King(BLACK), Bishop(BLACK), Knight(BLACK), Rook(BLACK)
     ]
-
+   
     # Цикл ввода команд игроков
     while True:
         # Выводим положение фигур на доске
@@ -482,69 +482,69 @@ def main():
 
 
 def draw_chess_board(board):
-    # experemental
+    # experimental
     from PIL import Image, ImageDraw, ImageFont
     from string import ascii_uppercase
     dark = '#3F3F3F'
     fair = '#BDBDBD'
     mid = '#7F7F7F'
-    image = Image.new('RGB', (1500, 1600), fair)
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype('C:/Windows/Fonts/Arial.ttf', 100)
-
-    # внешняя ракма доски
-    draw.rectangle([0, 0, 1499, 24], fill=mid)
-    draw.rectangle([0, 1499, 1499, 1474], fill=mid)
-    draw.rectangle([1499, 0, 1474, 1499], fill=mid)
-    draw.rectangle([0, 0, 24, 1499], fill=mid)
-
-    # внутренняя рамка доски
-    draw.rectangle([125, 125, 1374, 149], fill=mid)
-    draw.rectangle([125, 125, 149, 1374], fill=mid)
-    draw.rectangle([1374, 125, 1349, 1374], fill=mid)
-    draw.rectangle([125, 1374, 1374, 1349], fill=mid)
-
+    font = ImageFont.truetype('C:/Windows/Fonts/Arial.ttf', 50)
+    pieces = {'wP': 'white_pawn', 'wR': 'white_rook', 'wN': 'white_knight',
+              'wB': 'white_bishop', 'wK': 'white_king', 'wQ': 'white_queen',
+              'bP': 'black_pawn', 'bR': 'black_rook', 'bN': 'black_knight',
+              'bB': 'black_bishop', 'bK': 'black_king', 'bQ': 'black_queen'}
     box = lambda a: None
     list_of_letters = []
+    image = Image.new('RGB', (750, 800), fair)
+    draw = ImageDraw.Draw(image)
+
+    # внешняя ракма доски
+    draw.rectangle([0, 0, 749, 14], fill=mid)  # от левого верхнего до правого верхнего
+    draw.rectangle([0, 0, 14, 749], fill=mid)  # от левого верхнего до левого нижнего
+    draw.rectangle([749, 0, 735, 749], fill=mid)  # от правого верхнего до правого нижнего
+    draw.rectangle([0, 749, 749, 735], fill=mid)  # от левого нижнего до правого нижнего
+
+    # внутренняя рамка доски
+    draw.rectangle([60, 60, 689, 74], fill=mid)  # от левого верхнего до правого верхнего
+    draw.rectangle([60, 75, 74, 689], fill=mid)  # от левого верхнего до левого нижнего
+    draw.rectangle([675, 75, 689, 689], fill=mid)  # от правого верхнего до правого нижнего
+    draw.rectangle([75, 675, 689, 689], fill=mid)  # от левого нижнего до правого нижнего
+
     if board.color == WHITE:
         for num in range(8, 0, -1):
-            draw.text((90 - font.getsize(str(num))[1] // 2, (9 - num) * 150 + 15),
+            draw.text((45 - font.getsize(str(num))[1] // 2, (9 - num) * 75 + 7),
                       str(num), fill=mid, font=font)
-            draw.text((1445 - font.getsize(str(num))[1] // 2, (9 - num) * 150 + 15),
+            draw.text((722 - font.getsize(str(num))[1] // 2, (9 - num) * 75 + 7),
                       str(num), fill=mid, font=font)
         list_of_letters = ascii_uppercase[:8]
-        box = lambda row, col: ((col + 1) * 150 + 25, (8 - row) * 150 + 25)
+        box = lambda row, col: ((col + 1) * 75 + 12, (8 - row) * 75 + 12)
 
     elif board.color == BLACK:
         for num in range(1, 9):
-            draw.text((90 - font.getsize(str(num))[1] // 2, num * 150 + 15),
+            draw.text((45 - font.getsize(str(num))[1] // 2, num * 75 + 7),
                       str(num), fill=mid, font=font)
-            draw.text((1445 - font.getsize(str(num))[1] // 2, num * 150 + 15),
+            draw.text((722 - font.getsize(str(num))[1] // 2, num * 75 + 7),
                       str(num), fill=mid, font=font)
         list_of_letters = reversed(ascii_uppercase[:8])
-        box = lambda row, col: ((8 - col) * 150 + 25, (row + 1) * 150 + 25)
+        box = lambda row, col: ((8 - col) * 75 + 12, (row + 1) * 75 + 12)
 
     for i, let in enumerate(list_of_letters):
-        draw.text(((i + 1) * 150 + 75 - font.getsize(let)[0] // 2, 25),
+        draw.text(((i + 1) * 75 + 37 - font.getsize(let)[0] // 2, 12),
                   let, fill=mid, font=font)
-        draw.text(((i + 1) * 150 + 75 - font.getsize(let)[0] // 2, 1375),
+        draw.text(((i + 1) * 75 + 37 - font.getsize(let)[0] // 2, 687),
                   let, fill=mid, font=font)
 
     for i in range(8):
         for j in range(8):
             if i % 2 + j % 2 == 1:
-                draw.rectangle([(j + 1) * 150, (i + 1) * 150,
-                                (j + 2) * 150 - 1, (i + 2) * 150 - 1], fill=dark)
+                draw.rectangle([(j + 1) * 75, (i + 1) * 75,
+                                (j + 2) * 75 - 1, (i + 2) * 75 - 1], fill=dark)
 
-    pieces = {'wP': 'white_pawn', 'wR': 'white_rook', 'wN': 'white_knight',
-              'wB': 'white_bishop', 'wK': 'white_king', 'wQ': 'white_queen',
-              'bP': 'black_pawn', 'bR': 'black_rook', 'bN': 'black_knight',
-              'bB': 'black_bishop', 'bK': 'black_king', 'bQ': 'black_queen'}
     for row in range(8):
         for col in range(8):
             if board.cell(row, col) in pieces:
                 name = 'images/' + pieces[board.cell(row, col)] + '.png'
-                pil_im = Image.open(name)
+                pil_im = Image.open(name).resize((50, 50))
                 image.paste(pil_im, box=box(row, col), mask=pil_im)
 
     if board.winner is None:
@@ -553,22 +553,22 @@ def draw_chess_board(board):
             text = 'Ход Белых'
         elif board.color == BLACK:
             text = 'Ход Чёрных'
-        draw.text((500, 1500), text, fill=dark, font=font)
+        draw.text((250, 750), text, fill=dark, font=font)
     else:
         text = ''
         if board.winner == WHITE:
             text = 'Победили Белые'
         elif board.winner == BLACK:
             text = 'Победили Чёрные'
-        draw.text((350, 1500), text, fill=dark, font=font)
-    image.save('res.png',)
+        draw.text((175, 750), text, fill=dark, font=font)
+    return image
 
 
-def GUI():
+def GUI(board):
+    # experimental
     root = Tk()
     canvas = Canvas(root, width=750, height=800)
-    image = ImageTk.PhotoImage(Image.open("res.png").resize((750, 800)))
+    image = ImageTk.PhotoImage(draw_chess_board(board))
     imagesprite = canvas.create_image(375, 400, image=image)
     canvas.pack()
     root.mainloop()
-
