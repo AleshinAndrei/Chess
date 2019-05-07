@@ -43,12 +43,11 @@ class Piece:
         piece, board1.field[row][col] = board1.field[row][col], None
         board1.field[row1][col1] = piece
 
-        king = King(self.get_color())
-        for i in range(8):
-            for j in range(8):
-                if board1.get_piece(i, j) == king:
-                    # свой король не подставляется под шах
-                    return not board1.is_under_attack(i, j, opponent(self.get_color()))
+        coord_of_king = board.find_king(self.get_color())
+        if coord_of_king is not None:
+            return not board1.is_under_attack(*coord_of_king, opponent(self.get_color()))
+        else:
+            return False
 
 
 class Knight(Piece):
@@ -209,10 +208,25 @@ class King(Piece):
 
 
 class Board:
-    def __init__(self):
+    def __init__(self, *start_position):
         self.color = WHITE
-        self.field = [[None] * 8 for _ in range(8)]
         self.winner = None
+        if not start_position:
+            self.field = [
+                [Rook(WHITE), Knight(WHITE), Bishop(WHITE), Queen(WHITE),
+                 King(WHITE), Bishop(WHITE), Knight(WHITE), Rook(WHITE)],
+
+                [Pawn(WHITE), Pawn(WHITE), Pawn(WHITE), Pawn(WHITE),
+                 Pawn(WHITE), Pawn(WHITE), Pawn(WHITE), Pawn(WHITE)]
+            ] + [[None] * 8 for _ in range(4)] + [
+                [Pawn(BLACK), Pawn(BLACK), Pawn(BLACK), Pawn(BLACK),
+                 Pawn(BLACK), Pawn(BLACK), Pawn(BLACK), Pawn(BLACK)],
+
+                [Rook(BLACK), Knight(BLACK), Bishop(BLACK), Queen(BLACK),
+                 King(BLACK), Bishop(BLACK), Knight(BLACK), Rook(BLACK)]
+            ]
+        else:
+            self.field = start_position[0]
 
     def get_piece(self, row, col):
         '''Возращает фигуру, стоящую на клетке (row, col).'''
@@ -232,7 +246,7 @@ class Board:
         # константы WHITE и BLACK содержат в себе один символ, который обозначает цвет
         return piece.get_color() + piece.char()
 
-    def is_under_attack(self, row, col, color):  # 6 5 'w'
+    def is_under_attack(self, row, col, color):
         '''Возращает True, если поле с координатами (row, col)
          находится под боем хотя бы одной фигуры цвета color.'''
         for i in range(len(self.field)):
@@ -240,24 +254,30 @@ class Board:
                 if piece is not None and piece.get_color() == color and\
                    piece.can_move(self, i, j, row, col):
                     return True
+        else:
+            return False
+
+    def find_king(self, color):
+        for i in range(8):
+            for j in range(8):
+                if self.get_piece(i, j) == King(color):
+                    return i, j
 
     def move_and_promote_pawn(self, row, col, row1, col1, char):
-        if row == 6 and row1 == 7 and self.get_piece(row, col) == Pawn(WHITE) or \
-                row == 1 and row1 == 0 and self.get_piece(row, col) == Pawn(BLACK):
-            pieces = {'Q': Queen(self.color), 'R': Rook(self.color, not_move=False),
-                      'B': Bishop(self.color), 'N': Knight(self.color)}
-            pawn = self.get_piece(row, col)
-            if pawn.can_move(self, row, col, row1, col1):
-                if char in pieces:
-                    self.field[row1][col1] = pieces[char]
-                else:
-                    return False
-                self.field[row][col] = None
-                self.color = opponent(self.color)
-                return True
-        return False
+        pieces = {'Q': Queen(self.color), 'R': Rook(self.color, not_move=False),
+                  'B': Bishop(self.color), 'N': Knight(self.color)}
+        pawn = self.get_piece(row, col)
+        if pawn.can_move(self, row, col, row1, col1):
+            if char in pieces:
+                self.field[row1][col1] = pieces[char]
+            else:
+                return False
+            self.field[row][col] = None
+            self.color = opponent(self.color)
+            return True
 
     def castling0(self):
+        '''Если дальняя рокировка возможна, программаа выполнить её и вернёт True, если нет — только вернёт False.'''
         if self.color == WHITE:
             row = 0
         elif self.color == BLACK:
@@ -285,6 +305,7 @@ class Board:
         return False
 
     def castling7(self):
+        '''Если ближняя рокировка возможна, программаа выполнить её и вернёт True, если нет — только вернёт False.'''
         if self.color == WHITE:
             row = 0
         else:
@@ -309,7 +330,7 @@ class Board:
             return True
         return False
 
-    def move_piece(self, row, col, row1, col1):
+    def move_piece(self, row, col, row1, col1, *char):
         '''Переместить фигуру из точки (row, col) в точку (row1, col1).
         Если перемещение возможно, метод выполнит его и вернёт 'Ход успешен'.
         Если нет --- вернёт соотвествующую ошибку'''
@@ -323,13 +344,22 @@ class Board:
             return 'Нужно ходить фигурой'
         if piece.get_color() != self.color:
             return 'Нельзя ходить фигурой противника'
+        if row1 in {0, 7}:
+            if col1 == 2 and self.castling0():
+                return 'Дальняя рокировка успешна'
+            elif col1 == 6 and self.castling7():
+                return 'Ближняя рокировка успешна'
+        if type(self.get_piece(row, col)) == Pawn and \
+                (row == 6 and row1 == 7 and self.get_color_of_piece(row, col) == WHITE or
+                 row == 1 and row1 == 0 and self.get_color_of_piece(row, col) == BLACK) and\
+                self.move_and_promote_pawn(row, col, row1, col1, *char):
+            return 'Ход успешен'
         if not piece.can_move(self, row, col, row1, col1):
-            return 'Фигура не может ходить в это место'
+            return 'Эта фигура не может ходить в это место'
 
         if type(piece) in {King, Rook}:
             piece.not_move = False
-
-        if type(piece) == Pawn:
+        elif type(piece) == Pawn:
             # взятие а проходе
             if self.get_piece(row1, col1) is None:
                 if self.color == WHITE:
@@ -346,14 +376,10 @@ class Board:
         self.color = opponent(self.color)
         return 'Ход успешен'
 
-    def check_mate(self):
-        king, row, col, color = None, 0, 0, self.color
-        # поиск короля и его координаты
-        for i in range(8):
-            for j in range(8):
-                if type(self.get_piece(i, j)) == King and\
-                   self.get_color_of_piece(i, j) == self.color:
-                    king, row, col = self.get_piece(i, j), i, j
+    def checkmate(self):
+        color = self.color
+        row, col = self.find_king(color)
+        king = self.get_piece(row, col)
 
         # поиск угрожающих фигур
         list_of_threatening_pieces = []
@@ -365,32 +391,29 @@ class Board:
 
         if len(list_of_threatening_pieces) == 0:
             # нет угрожающих фигур
-            return True
+            return False
         else:
             # куда может ходить король
             for i, j in [(row - 1, col - 1), (row - 1, col), (row - 1, col + 1),
                          (row, col - 1), (row, col + 1),
                          (row + 1, col - 1), (row + 1, col), (row + 1, col + 1)]:
                 if king.can_move(self, row, col, i, j):
-                    return True
+                    return False
 
             # если король никуда не может убежать, то ищем, как его закрыть от удара
             if len(list_of_threatening_pieces) == 1:
                 threatening_piece, row_coor, col_coor = list_of_threatening_pieces[0]
                 # угрожающая фигура, строка и колона, в которых она сидит
+
                 if type(threatening_piece) in {Knight, Pawn}:
-                    for i in range(8):
-                        for j, piece in enumerate(self.field[i]):
-                            # ищем фигуру, которая может съесть угрожающую фигуру
-                            if piece is not None and piece.get_color() == color and \
-                               piece.can_move(self, i, j, row_coor, col_coor):
-                                return True
-                    self.winner = opponent(col)
-                    return False
+                    if self.is_under_attack(row_coor, col_coor, color):
+                        return False
+                    else:
+                        self.winner = opponent(col)
+                        return True
                 else:
                     dir_row = 0
                     dir_col = 0
-                    # ищем фигуру, которая может встать между королём и угрожающей фигурой
                     if abs(row - row_coor) == abs(col - col_coor):
                         # если по диагонали
                         dir_col = abs(col_coor - col) // (col_coor - col)
@@ -402,27 +425,25 @@ class Board:
                     elif col == col_coor:
                         dir_col = 0
                         dir_row = abs(col_coor - col) // (col_coor - col)
-
+                    # ищем фигуру, которая может встать между королём и угрожающей фигурой
                     for bet in range(1, abs(col_coor - col)):
-                        for i in range(len(self.field)):
-                            for j, piece in enumerate(self.field[i]):
-                                board1 = deepcopy(self)
-                                if board1.move_piece(i, j, row + i * dir_row, col + i * dir_col):
-                                    return True
-                    self.winner = opponent(col)
-                    return False
+                        if self.is_under_attack(row + i * dir_row, col + i * dir_col, color):
+                            return False
+                    else:
+                        self.winner = opponent(col)
+                        return True
             # если угрожающих фигур больше 1, то невозможно укрыться от них
             else:
                 self.winner = opponent(col)
-                return False
+                return True
 
 
 def print_board(board):  # Распечатать доску в текстовом виде (см. скриншот)
     print('     +----+----+----+----+----+----+----+----+')
     for row in range(7, -1, -1):
-        print(' ', row, end='  ')
+        print(f'  {row}  ', end='')
         for col in range(8):
-            print('|', board.cell(row, col), end=' ')
+            print(f'| {board.cell(row, col)} ', end='')
         print('|')
         print('     +----+----+----+----+----+----+----+----+')
     print(end='        ')
@@ -431,27 +452,10 @@ def print_board(board):  # Распечатать доску в текстово
     print()
 
 
-def main():
+def main(*start_position):
     # Создаём шахматную доску
-    board = Board()
+    board = Board(*start_position)
 
-    board.field[0] = [
-        Rook(WHITE), Knight(WHITE), Bishop(WHITE), Queen(WHITE),
-        King(WHITE), Bishop(WHITE), Knight(WHITE), Rook(WHITE)
-    ]
-    board.field[1] = [
-        Pawn(WHITE), Pawn(WHITE), Pawn(WHITE), Pawn(WHITE),
-        Pawn(WHITE), Pawn(WHITE), Pawn(WHITE), Pawn(WHITE)
-    ]
-    board.field[6] = [
-        Pawn(BLACK), Pawn(BLACK), Pawn(BLACK), Pawn(BLACK),
-        Pawn(BLACK), Pawn(BLACK), Pawn(BLACK), Pawn(BLACK)
-    ]
-    board.field[7] = [
-        Rook(BLACK), Knight(BLACK), Bishop(BLACK), Queen(BLACK),
-        King(BLACK), Bishop(BLACK), Knight(BLACK), Rook(BLACK)
-    ]
-   
     # Цикл ввода команд игроков
     while True:
         # Выводим положение фигур на доске
@@ -462,7 +466,7 @@ def main():
         print('    move <row> <col> <row1> <col1>     -- ход из клетки (row, col)')
         print('                                          в клетку (row1, col1)')
         # Выводим приглашение игроку нужного цвета
-        if not board.check_mate():
+        if not board.checkmate():
             if board.winner == WHITE:
                 print('Победили Белые')
             elif board.winner == BLACK:
@@ -478,97 +482,10 @@ def main():
         move_type, row, col, row1, col1 = command.split()
         row, col, row1, col1 = int(row), int(col), int(row1), int(col1)
         # выводит ошибку или успех
-        print(board.move_piece(row, col, row1, col1))
+        try:
+            print(board.move_piece(row, col, row1, col1))
+        except TypeError:
+            print('Введите букву фигуры')
+            char = input()
+            print(board.move_piece(row, col, row1, col1, char))
 
-
-def draw_chess_board(board):
-    # experimental
-    from PIL import Image, ImageDraw, ImageFont
-    from string import ascii_uppercase
-    dark = '#3F3F3F'
-    fair = '#BDBDBD'
-    mid = '#7F7F7F'
-    font = ImageFont.truetype('C:/Windows/Fonts/Arial.ttf', 50)
-    pieces = {'wP': 'white_pawn', 'wR': 'white_rook', 'wN': 'white_knight',
-              'wB': 'white_bishop', 'wK': 'white_king', 'wQ': 'white_queen',
-              'bP': 'black_pawn', 'bR': 'black_rook', 'bN': 'black_knight',
-              'bB': 'black_bishop', 'bK': 'black_king', 'bQ': 'black_queen'}
-    box = lambda a: None
-    list_of_letters = []
-    image = Image.new('RGB', (750, 800), fair)
-    draw = ImageDraw.Draw(image)
-
-    # внешняя ракма доски
-    draw.rectangle([0, 0, 749, 14], fill=mid)  # от левого верхнего до правого верхнего
-    draw.rectangle([0, 0, 14, 749], fill=mid)  # от левого верхнего до левого нижнего
-    draw.rectangle([749, 0, 735, 749], fill=mid)  # от правого верхнего до правого нижнего
-    draw.rectangle([0, 749, 749, 735], fill=mid)  # от левого нижнего до правого нижнего
-
-    # внутренняя рамка доски
-    draw.rectangle([60, 60, 689, 74], fill=mid)  # от левого верхнего до правого верхнего
-    draw.rectangle([60, 75, 74, 689], fill=mid)  # от левого верхнего до левого нижнего
-    draw.rectangle([675, 75, 689, 689], fill=mid)  # от правого верхнего до правого нижнего
-    draw.rectangle([75, 675, 689, 689], fill=mid)  # от левого нижнего до правого нижнего
-
-    if board.color == WHITE:
-        for num in range(8, 0, -1):
-            draw.text((45 - font.getsize(str(num))[1] // 2, (9 - num) * 75 + 7),
-                      str(num), fill=mid, font=font)
-            draw.text((722 - font.getsize(str(num))[1] // 2, (9 - num) * 75 + 7),
-                      str(num), fill=mid, font=font)
-        list_of_letters = ascii_uppercase[:8]
-        box = lambda row, col: ((col + 1) * 75 + 12, (8 - row) * 75 + 12)
-
-    elif board.color == BLACK:
-        for num in range(1, 9):
-            draw.text((45 - font.getsize(str(num))[1] // 2, num * 75 + 7),
-                      str(num), fill=mid, font=font)
-            draw.text((722 - font.getsize(str(num))[1] // 2, num * 75 + 7),
-                      str(num), fill=mid, font=font)
-        list_of_letters = reversed(ascii_uppercase[:8])
-        box = lambda row, col: ((8 - col) * 75 + 12, (row + 1) * 75 + 12)
-
-    for i, let in enumerate(list_of_letters):
-        draw.text(((i + 1) * 75 + 37 - font.getsize(let)[0] // 2, 12),
-                  let, fill=mid, font=font)
-        draw.text(((i + 1) * 75 + 37 - font.getsize(let)[0] // 2, 687),
-                  let, fill=mid, font=font)
-
-    for i in range(8):
-        for j in range(8):
-            if i % 2 + j % 2 == 1:
-                draw.rectangle([(j + 1) * 75, (i + 1) * 75,
-                                (j + 2) * 75 - 1, (i + 2) * 75 - 1], fill=dark)
-
-    for row in range(8):
-        for col in range(8):
-            if board.cell(row, col) in pieces:
-                name = 'images/' + pieces[board.cell(row, col)] + '.png'
-                pil_im = Image.open(name).resize((50, 50))
-                image.paste(pil_im, box=box(row, col), mask=pil_im)
-
-    if board.winner is None:
-        text = ''
-        if board.color == WHITE:
-            text = 'Ход Белых'
-        elif board.color == BLACK:
-            text = 'Ход Чёрных'
-        draw.text((250, 750), text, fill=dark, font=font)
-    else:
-        text = ''
-        if board.winner == WHITE:
-            text = 'Победили Белые'
-        elif board.winner == BLACK:
-            text = 'Победили Чёрные'
-        draw.text((175, 750), text, fill=dark, font=font)
-    return image
-
-
-def GUI(board):
-    # experimental
-    root = Tk()
-    canvas = Canvas(root, width=750, height=800)
-    image = ImageTk.PhotoImage(draw_chess_board(board))
-    imagesprite = canvas.create_image(375, 400, image=image)
-    canvas.pack()
-    root.mainloop()
