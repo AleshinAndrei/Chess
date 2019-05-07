@@ -51,7 +51,7 @@ def draw_mask(board):
     for row in range(8):
         for col in range(8):
             if board.cell(row, col) in pieces:
-                name = 'images/' + pieces[board.cell(row, col)] + '.png'
+                name = pieces[board.cell(row, col)] + '.png'
                 piece_im = Image.open(name).resize((75, 75))
                 image.paste(piece_im, box=box(row, col), mask=piece_im)
 
