@@ -1,7 +1,8 @@
 from tkinter import *
-from PIL import Image, ImageTk
+from PIL import ImageTk
 from chess_board import Board, WHITE, BLACK, opponent
-from draw_mask_for_board import draw_mask
+from draw_board import draw_chess_board
+from draw_mask_for_board import draw_chess_mask
 from draw_mask_of_cells import draw_cells_mask
 from draw_mask_of_choose import draw_choose_mask
 
@@ -16,22 +17,12 @@ def choose_click(event, board, row, col, row1, col1):
         root.bind('<Button-1>', lambda event: choose_click(event, board, row, col, row1, col1))
 
 
-def click(event, status, board, image_of_board):
+def click(event, status, board):
+    global tk_image
     x = event.x
     y = event.y
     list_of_can_move = []
-
-    coor_of_king = board.find_king(board.color)
-    list_of_threatening_pieces = []
-    for i in range(8):
-        for j, piece in enumerate(board.field[i]):
-            if piece is not None and piece.get_color() == opponent(board.color) and \
-                    piece.can_move(board, i, j, *coor_of_king):
-                list_of_threatening_pieces.append((i, j))
-    if list_of_threatening_pieces:
-        status['dangerous'] = (coor_of_king, list_of_threatening_pieces)
-    else:
-        status['dangerous'] = None
+    image_of_board = draw_chess_board()
 
     if 75 <= x <= 675 and 75 <= y <= 675:
         row = 0
@@ -59,24 +50,38 @@ def click(event, status, board, image_of_board):
                 # если потребуется фигура для замены пешки
                 choose_mask = draw_choose_mask(board.color)
                 cells_mask = draw_cells_mask(status, board.color)
-                pieces_mask = draw_mask(board)
+                pieces_mask = draw_chess_mask(board)
                 image_of_board.paste(cells_mask, mask=cells_mask)
                 image_of_board.paste(pieces_mask, mask=pieces_mask)
                 image_of_board.paste(choose_mask, mask=choose_mask)
-                canvas.create_image(375, 400, image=image_of_board)
+                tk_image = ImageTk.PhotoImage(image_of_board)
                 root.bind('<Button-1>', lambda event: choose_click(event, board, *status['active'], row, col))
             status['active'] = None
     else:
         status['active'] = None
 
     if board.checkmate():
-        print(board.winner)
         root.destroy()
+
+    coor_of_king = board.find_king(board.color)
+    list_of_threatening_pieces = []
+    for i in range(8):
+        for j, piece in enumerate(board.field[i]):
+            if piece is not None and piece.get_color() == opponent(board.color) and \
+                    piece.can_move(board, i, j, *coor_of_king):
+                list_of_threatening_pieces.append((i, j))
+    if list_of_threatening_pieces:
+        status['dangerous'] = (coor_of_king, list_of_threatening_pieces)
+    else:
+        status['dangerous'] = None
+
     cells_mask = draw_cells_mask(status, list_of_can_move, board.color)
-    pieces_mask = draw_mask(board)
-    image_of_board.paste(cells_mask)
-    image_of_board.paste(pieces_mask)
-    canvas.create_image(375, 400, image=image_of_board)
+    mask_of_board = draw_chess_mask(board)
+    image_of_board.paste(cells_mask, mask=cells_mask)
+    image_of_board.paste(mask_of_board, mask=mask_of_board)
+    tk_image = ImageTk.PhotoImage(image_of_board)
+
+    canvas.create_image(375, 400, image=tk_image)
     canvas.pack()
 
 
@@ -87,10 +92,13 @@ class StartClick:
 
 
 root = Tk()
-image = ImageTk.PhotoImage(Image.open('board_image.png'))
+root.title('Chess')
 board = Board()
-status = {'active': None, 'dangerous': None}
 canvas = Canvas(root, width=750, height=800)
-click(StartClick(), status, board, image)
-root.bind('<Button-1>', lambda event: click(event, status, board, image))
+status = {'active': None, 'dangerous': None}
+
+click(StartClick(), status, board)
+root.bind('<Button-1>', lambda event: click(event, status, board))
+canvas.create_image(375, 400, image=tk_image)
+canvas.pack()
 root.mainloop()
