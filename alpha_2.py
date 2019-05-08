@@ -37,7 +37,7 @@ def click(event, status, board):
 
         if status['active'] is None:
             piece = board.get_piece(row, col)
-            if piece is not None:
+            if board.get_color_of_piece(row, col) == board.color:
                 status['active'] = (row, col)
                 for i in range(8):
                     for j in range(8):
