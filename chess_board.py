@@ -1,6 +1,4 @@
 from copy import deepcopy
-from tkinter import *
-from PIL import Image, ImageTk
 
 
 WHITE = 'w'
@@ -51,7 +49,6 @@ class Piece:
 
 
 class Knight(Piece):
-
     def char(self):
         '''возращает однобуквенное представление фигуры,
         в данном случае возращает "N".'''
@@ -63,7 +60,6 @@ class Knight(Piece):
 
 
 class Bishop(Piece):
-
     def char(self):
         '''возращает однобуквенное представление фигуры,
         в данном случае возращает "B".'''
@@ -85,7 +81,6 @@ class Bishop(Piece):
 
 
 class Rook(Piece):
-
     def __init__(self, color, not_move=True):
         super().__init__(color)
         # для реализации рокировки
@@ -102,18 +97,18 @@ class Rook(Piece):
         if row == row1 and col == col1:
             return False
         if col == col1:
-            in_cicle = abs(row - row1)  # будем проверять либо по вертикали, либо по горизонтали
+            in_cycle = abs(row - row1)  # будем проверять либо по вертикали, либо по горизонтали
             dir_row = abs(row1 - row) // (row1 - row)  # шёл вверх или вниз
             dir_col = 0
 
         elif row == row1:
-            in_cicle = abs(col - col1)
+            in_cycle = abs(col - col1)
             dir_row = 0
             dir_col = abs(col1 - col) // (col1 - col)  # шёл влево или вправо
         else:
             return False
 
-        for i in range(1, in_cicle):
+        for i in range(1, in_cycle):
             if board.get_piece(row + i * dir_row, col + i * dir_col) is not None:
                 # есть фигура на пути
                 return False
@@ -171,7 +166,6 @@ class Pawn(Piece):
 
 
 class Queen(Bishop, Rook):
-
     def char(self):
         '''возращает однобуквенное представление фигуры,
         в данном случае возращает "Q".'''
@@ -183,7 +177,6 @@ class Queen(Bishop, Rook):
 
 
 class King(Piece):
-
     def __init__(self, color, not_move=True):
         super().__init__(color)
         # для реализации рокировки
@@ -280,7 +273,7 @@ class Board:
         '''Если дальняя рокировка возможна, программаа выполнить её и вернёт True, если нет — только вернёт False.'''
         if self.color == WHITE:
             row = 0
-        elif self.color == BLACK:
+        else:
             row = 7
 
         if self.get_piece(row, 4) == King(self.color) and self.get_piece(row, 4).not_move and\
@@ -385,8 +378,8 @@ class Board:
         list_of_threatening_pieces = []
         for i in range(8):
             for j, piece in enumerate(self.field[i]):
-                if piece is not None and piece.get_color() == opponent(color) and\
-                   piece.can_move(self, i, j, row, col):
+                if piece is not None and piece.get_color() == opponent(color) and \
+                        piece.can_move(self, i, j, row, col):
                     list_of_threatening_pieces.append((piece, i, j))
 
         if len(list_of_threatening_pieces) == 0:
@@ -488,4 +481,3 @@ def main(*start_position):
             print('Введите букву фигуры')
             char = input()
             print(board.move_piece(row, col, row1, col1, char))
-
