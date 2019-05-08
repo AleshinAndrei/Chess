@@ -87,7 +87,7 @@ class StartClick:
 
 
 root = Tk()
-image = ImageTk.PhotoImage(Image.open('res.png'))
+image = ImageTk.PhotoImage(Image.open('board_image'))
 board = Board()
 status = {'active': None, 'dangerous': None}
 canvas = Canvas(root, width=750, height=800)
