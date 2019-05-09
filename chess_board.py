@@ -270,7 +270,7 @@ class Board:
             return True
 
     def castling0(self):
-        '''Если дальняя рокировка возможна, программаа выполнить её и вернёт True, если нет — только вернёт False.'''
+        '''Если дальняя рокировка возможна, программаа вернёт True, если нет — вернёт False.'''
         if self.color == WHITE:
             row = 0
         else:
@@ -278,7 +278,6 @@ class Board:
 
         if self.get_piece(row, 4) == King(self.color) and self.get_piece(row, 4).not_move and\
            self.get_piece(row, 0) == Rook(self.color) and self.get_piece(row, 0).not_move:
-
             # проверяем клетки между лодьёй и королём
             if self.is_under_attack(row, 4, opponent(self.color)):
                 return False
@@ -288,17 +287,11 @@ class Board:
                 if self.get_piece(row, i) is not None or\
                    self.is_under_attack(row, i, opponent(self.color)):
                     return False
-
-            self.field[row][2], self.field[row][4] = self.field[row][4], self.field[row][2]
-            self.field[row][0], self.field[row][3] = self.field[row][3], self.field[row][0]
-            self.get_piece(row, 2).not_move = False
-            self.get_piece(row, 3).not_move = False
-            self.color = opponent(self.color)
             return True
         return False
 
     def castling7(self):
-        '''Если ближняя рокировка возможна, программаа выполнить её и вернёт True, если нет — только вернёт False.'''
+        '''Если ближняя рокировка возможна, программаа вернёт True, если нет — вернёт False.'''
         if self.color == WHITE:
             row = 0
         else:
@@ -306,7 +299,6 @@ class Board:
 
         if self.get_piece(row, 4) == King(self.color) and self.get_piece(row, 4).not_move and\
            self.get_piece(row, 7) == Rook(self.color) and self.get_piece(row, 7).not_move:
-
             # проверяем клетки между лодьёй и королём
             if self.is_under_attack(row, 4, opponent(self.color)):
                 return False
@@ -314,12 +306,6 @@ class Board:
                 if self.get_piece(row, i) is not None or\
                    self.is_under_attack(row, i, opponent(self.color)):
                     return False
-
-            self.field[row][6], self.field[row][4] = self.field[row][4], self.field[row][6]
-            self.field[row][7], self.field[row][5] = self.field[row][5], self.field[row][7]
-            self.get_piece(row, 6).not_move = False
-            self.get_piece(row, 5).not_move = False
-            self.color = opponent(self.color)
             return True
         return False
 
@@ -339,8 +325,18 @@ class Board:
             return 'Нельзя ходить фигурой противника'
         if row1 in {0, 7}:
             if col1 == 2 and self.castling0():
+                self.field[row][2], self.field[row][4] = self.field[row][4], self.field[row][2]
+                self.field[row][0], self.field[row][3] = self.field[row][3], self.field[row][0]
+                self.get_piece(row, 2).not_move = False
+                self.get_piece(row, 3).not_move = False
+                self.color = opponent(self.color)
                 return 'Дальняя рокировка успешна'
             elif col1 == 6 and self.castling7():
+                self.field[row][6], self.field[row][4] = self.field[row][4], self.field[row][6]
+                self.field[row][7], self.field[row][5] = self.field[row][5], self.field[row][7]
+                self.get_piece(row, 6).not_move = False
+                self.get_piece(row, 5).not_move = False
+                self.color = opponent(self.color)
                 return 'Ближняя рокировка успешна'
         if type(self.get_piece(row, col)) == Pawn and \
                 (row == 6 and row1 == 7 and self.get_color_of_piece(row, col) == WHITE or
@@ -432,6 +428,7 @@ class Board:
 
 
 def print_board(board):  # Распечатать доску в текстовом виде (см. скриншот)
+    # it's for debug
     print('     +----+----+----+----+----+----+----+----+')
     for row in range(7, -1, -1):
         print(f'  {row}  ', end='')
@@ -446,6 +443,7 @@ def print_board(board):  # Распечатать доску в текстово
 
 
 def main(*start_position):
+    # it's for debug
     # Создаём шахматную доску
     board = Board(*start_position)
 
