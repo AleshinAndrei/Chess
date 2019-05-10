@@ -55,8 +55,16 @@ class Knight(Piece):
         return 'N'
 
     def can_move(self, board, row, col, row1, col1):
-        return abs((row - row1) * (col - col1)) == 2 and\
-            super().can_move(board, row, col, row1, col1)
+        return correct_coords(row, col) and correct_coords(row1, col1) and\
+               abs((row - row1) * (col - col1)) == 2 and\
+               super().can_move(board, row, col, row1, col1)
+
+    def can_move_at_all(self, board, row, col):
+        for i, j in [(row + 2, col + 1), (row + 1, col + 2), (row - 1, col + 2), (row - 2, col + 1),
+                     (row + 2, col - 1), (row + 1, col - 2), (row - 1, col - 2), (row - 2, col - 1)]:
+            if self.can_move(board, row, col, i, j):
+                return True
+        return False
 
 
 class Bishop(Piece):
@@ -66,7 +74,8 @@ class Bishop(Piece):
         return 'B'
 
     def can_move(self, board, row, col, row1, col1):
-        if row == row1 or col == col1:
+        if row == row1 or col == col1 or\
+           not correct_coords(row, col) or not correct_coords(row1, col1):
             return False
         if abs(col - col1) == abs(row - row1):
             dir_col = abs(col1 - col) // (col1 - col)
@@ -76,8 +85,14 @@ class Bishop(Piece):
                 if board.get_piece(row + i * dir_row, col + i * dir_col) is not None:
                     return False
             return super().can_move(board, row, col, row1, col1)
-        else:
-            return False
+        return False
+
+    def can_move_at_all(self, board, row, col):
+        for i, j in [(row + 1, col + 1), (row - 1, col + 1),
+                     (row + 1, col - 1), (row - 1, col - 1)]:
+            if self.can_move(board, row, col, i, j):
+                return True
+        return False
 
 
 class Rook(Piece):
@@ -94,13 +109,14 @@ class Rook(Piece):
     def can_move(self, board, row, col, row1, col1):  # 3 2 6 5
         # Невозможно сделать ход в клетку, которая не лежит в том же ряду
         # или столбце клеток.
-        if row == row1 and col == col1:
+        if row == row1 and col == col1 or \
+           not correct_coords(row, col) or not correct_coords(row1, col1):
             return False
+
         if col == col1:
             in_cycle = abs(row - row1)  # будем проверять либо по вертикали, либо по горизонтали
             dir_row = abs(row1 - row) // (row1 - row)  # шёл вверх или вниз
             dir_col = 0
-
         elif row == row1:
             in_cycle = abs(col - col1)
             dir_row = 0
@@ -113,6 +129,13 @@ class Rook(Piece):
                 # есть фигура на пути
                 return False
         return super().can_move(board, row, col, row1, col1)
+
+    def can_move_at_all(self, board, row, col):
+        for i, j in [(row, col - 1), (row, col + 1),
+                     (row - 1, col), (row + 1, col)]:
+            if self.can_move(board, row, col, i, j):
+                return True
+        return False
 
 
 class Pawn(Piece):
@@ -131,6 +154,9 @@ class Pawn(Piece):
     def can_move(self, board, row, col, row1, col1):
         # Пешка может сделать из начального положения ход на 2 клетки
         # вперёд, поэтому поместим индекс начального ряда в start_row.
+        if not correct_coords(row, col) or not correct_coords(row1, col1):
+            return False
+
         if self.get_color() == WHITE:
             direction = 1
             start_row = 1
@@ -147,7 +173,8 @@ class Pawn(Piece):
         # ход на 2 клетки из начального положения
         elif row == start_row and row + direction * 2 == row1 and col == col1 and\
                 board.get_piece(row1, col1) is None:
-            return super().can_move(board, row, col, row1, col1)
+            return board.get_piece(row + direction, col) is None and\
+                    super().can_move(board, row, col, row1, col1)
 
         # поедание по диагонали
         elif abs(col - col1) == 1 and row + direction == row1:
@@ -164,6 +191,13 @@ class Pawn(Piece):
         else:
             return False
 
+    def can_move_at_all(self, board, row, col):
+        dir = 1 if self.get_color() == WHITE else -1
+        for j in [col - 1, col, col + 1]:
+            if self.can_move(board, row, col, row + dir, j):
+                return True
+        return False
+
 
 class Queen(Bishop, Rook):
     def char(self):
@@ -174,6 +208,10 @@ class Queen(Bishop, Rook):
     def can_move(self, board, row, col, row1, col1):
         return Bishop(self.get_color()).can_move(board, row, col, row1, col1) or\
                Rook(self.get_color(), not_move=False).can_move(board, row, col, row1, col1)
+
+    def can_move_at_all(self, board, row, col):
+        return Bishop(self.get_color()).can_move_at_all(board, row, col) or\
+               Rook(self.get_color(), not_move=False).can_move_at_all(board, row, col)
 
 
 class King(Piece):
@@ -188,16 +226,23 @@ class King(Piece):
         return 'K'
 
     def can_move(self, board, row, col, row1, col1):
-        if abs(col - col1) in {0, 1} and abs(row - row1) in {0, 1} and \
-           ((row != row1 or col != col1) and correct_coords(row, col) and correct_coords(row1, col1) and
+        if correct_coords(row, col) and correct_coords(row1, col1) and\
+           abs(col - col1) in {0, 1} and abs(row - row1) in {0, 1} and \
+           ((row != row1 or col != col1) and
                 board.get_color_of_piece(row1, col1) != self.get_color()):
 
             board1 = deepcopy(board)
             piece, board1.field[row][col] = board1.field[row][col], None
             board1.field[row1][col1] = piece
             return not board1.is_under_attack(row1, col1, opponent(self.get_color()))
-        else:
-            return False
+        return False
+
+    def can_move_at_all(self, board, row, col):
+        for i in [row - 1, row, row + 1]:
+            for j in [col - 1, col, col + 1]:
+                if self.can_move(board, row, col, i, j):
+                    return True
+        return False
 
 
 class Board:
@@ -256,13 +301,13 @@ class Board:
                 if self.get_piece(i, j) == King(color):
                     return i, j
 
-    def move_and_promote_pawn(self, row, col, row1, col1, char):
+    def move_and_promote_pawn(self, row, col, row1, col1, *char):
         pieces = {'Q': Queen(self.color), 'R': Rook(self.color, not_move=False),
                   'B': Bishop(self.color), 'N': Knight(self.color)}
         pawn = self.get_piece(row, col)
         if pawn.can_move(self, row, col, row1, col1):
-            if char in pieces:
-                self.field[row1][col1] = pieces[char]
+            if char[0] in pieces:
+                self.field[row1][col1] = pieces[char[0]]
             else:
                 return False
             self.field[row][col] = None
@@ -370,39 +415,42 @@ class Board:
         row, col = self.find_king(color)
         king = self.get_piece(row, col)
 
-        # поиск угрожающих фигур
-        list_of_threatening_pieces = []
-        for i in range(8):
-            for j, piece in enumerate(self.field[i]):
-                if piece is not None and piece.get_color() == opponent(color) and \
-                        piece.can_move(self, i, j, row, col):
-                    list_of_threatening_pieces.append((piece, i, j))
-
-        if len(list_of_threatening_pieces) == 0:
-            # нет угрожающих фигур
+        if king.can_move_at_all(self, row, col):
             return False
         else:
-            # куда может ходить король
-            for i, j in [(row - 1, col - 1), (row - 1, col), (row - 1, col + 1),
-                         (row, col - 1), (row, col + 1),
-                         (row + 1, col - 1), (row + 1, col), (row + 1, col + 1)]:
-                if king.can_move(self, row, col, i, j):
-                    return False
+            # поиск угрожающих фигур и своих фигур
+            list_of_threatening_pieces = []
+            list_of_my_pieces = []
+            for i in range(8):
+                for j, piece in enumerate(self.field[i]):
+                    if piece is not None:
+                        if piece.get_color() == color:
+                            list_of_my_pieces.append((piece, i, j))
+                        elif piece.get_color() == opponent(color) and \
+                                piece.can_move(self, i, j, row, col):
+                            list_of_threatening_pieces.append((piece, i, j))
 
-            # если король никуда не может убежать, то ищем, как его закрыть от удара
-            if len(list_of_threatening_pieces) == 1:
+            # если зажали в тиски
+            if len(list_of_threatening_pieces) == 0:
+                for piece, i, j in list_of_my_pieces:
+                    if piece.can_move_at_all(self, i, j):
+                        return False
+
+            elif len(list_of_threatening_pieces) == 1:
+                # ищем, как закрыть от удара короля
                 threatening_piece, row_coor, col_coor = list_of_threatening_pieces[0]
-                # угрожающая фигура, строка и колона, в которых она сидит
 
                 if type(threatening_piece) in {Knight, Pawn}:
-                    if self.is_under_attack(row_coor, col_coor, color):
-                        return False
-                    else:
-                        self.winner = opponent(col)
-                        return True
+                    # если угрожает конь или пешка, то их можно только съесть
+                    for piece, i, j in list_of_my_pieces:
+                        if piece.can_move(self, i, j, row_coor, col_coor):
+                            return False
                 else:
+                    # если угрожает слон, лодья или ферзь
+                    # то определяем, откуда угрожают
                     dir_row = 0
                     dir_col = 0
+                    in_cycle = abs(col_coor - col) + 1
                     if abs(row - row_coor) == abs(col - col_coor):
                         # если по диагонали
                         dir_col = abs(col_coor - col) // (col_coor - col)
@@ -412,23 +460,25 @@ class Board:
                         dir_col = abs(col_coor - col) // (col_coor - col)
                         dir_row = 0
                     elif col == col_coor:
+                        # если по вертикали
                         dir_col = 0
-                        dir_row = abs(col_coor - col) // (col_coor - col)
+                        dir_row = abs(row_coor - row) // (row_coor - row)
+                        in_cycle = abs(row_coor - row) + 1
                     # ищем фигуру, которая может встать между королём и угрожающей фигурой
-                    for bet in range(1, abs(col_coor - col)):
-                        if self.is_under_attack(row + i * dir_row, col + i * dir_col, color):
-                            return False
-                    else:
-                        self.winner = opponent(col)
-                        return True
-            # если угрожающих фигур больше 1, то невозможно укрыться от них
-            else:
-                self.winner = opponent(col)
-                return True
+                    for bet in range(1, in_cycle):
+                        for piece, i, j in list_of_my_pieces:
+                            if piece.can_move(self, i, j, row + dir_row * bet, col + dir_col * bet):
+                                return False
+
+            # если угрожающих фигур больше 1
+            # или нельзя ходить ничем никуда
+            # или нельзя съесть угрожающую фигуру
+            # или нелья встать между угрожающей фигурой и королём
+            self.winner = opponent(col)
+            return True
 
 
 def print_board(board):  # Распечатать доску в текстовом виде (см. скриншот)
-    # it's for debug
     print('     +----+----+----+----+----+----+----+----+')
     for row in range(7, -1, -1):
         print(f'  {row}  ', end='')
@@ -443,7 +493,6 @@ def print_board(board):  # Распечатать доску в текстово
 
 
 def main(*start_position):
-    # it's for debug
     # Создаём шахматную доску
     board = Board(*start_position)
 
