@@ -1,4 +1,5 @@
-from tkinter import *
+# -*- coding: utf-8 -*-
+from tkinter import Tk, Canvas
 from PIL import ImageTk
 from chess_board import Board, WHITE, BLACK, opponent
 from draw_board import draw_chess_board
