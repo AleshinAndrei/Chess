@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from tkinter import *
 from PIL import ImageTk
 from chess_board import Board, WHITE, BLACK, opponent
