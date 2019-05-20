@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from chess_board import Board, WHITE, BLACK, Rook, Pawn, Bishop, King, Queen, Knight
 
 
