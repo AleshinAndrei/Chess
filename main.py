@@ -116,6 +116,4 @@ tk_image = ImageTk.PhotoImage(draw_chess_board())
 
 click(StartClick(), status, board)
 root.bind('<Button-1>', lambda event: click(event, status, board))
-canvas.create_image(375, 400, image=tk_image)
-canvas.pack()
 root.mainloop()
