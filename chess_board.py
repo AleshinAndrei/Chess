@@ -414,6 +414,7 @@ class Board:
         return 'Ход успешен'
 
     def checkmate(self):
+        """Возращает True, если королю поставлен мат, иначе False."""
         color = self.color
         row, col = self.find_king(color)
         king = self.get_piece(row, col)
@@ -509,10 +510,10 @@ def main(*start_position):
         print('    move <row> <col> <row1> <col1>     -- ход из клетки (row, col)')
         print('                                          в клетку (row1, col1)')
         # Выводим приглашение игроку нужного цвета
-        if not board.checkmate():
+        if board.checkmate():
             if board.winner == WHITE:
                 print('Победили Белые')
-            elif board.winner == BLACK:
+            else:
                 print('Победили Чёрные')
             break
         if board.color == WHITE:
